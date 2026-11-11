@@ -38,6 +38,13 @@ def url(path: str = "") -> str:
     """Prefix a site path for root deploys or GitHub Pages project sites."""
     return BASE + path.lstrip("/")
 DIST = ROOT / "dist"
+
+BOOKMARK_ICON = (
+    '<svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false">'
+    "<!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->"
+    '<path d="M0 64C0 28.7 28.7 0 64 0L320 0c35.3 0 64 28.7 64 64l0 417.1c0 25.6-28.5 40.8-49.8 26.6L192 412.8 49.8 507.7C28.5 521.9 0 506.6 0 481.1L0 64zM64 48c-8.8 0-16 7.2-16 16l0 387.2 117.4-78.2c16.1-10.7 37.1-10.7 53.2 0L336 451.2 336 64c0-8.8-7.2-16-16-16L64 48z"/>'
+    "</svg>"
+)
 SRC_CSS = ROOT / "src" / "style.css"
 SRC_JS = ROOT / "src" / "app.js"
 
@@ -434,7 +441,7 @@ def card_html(e: dict) -> str:
     form = esc(FORM_LABELS.get(e["form"], e["form"]))
     title = esc(e["title"])
     return f"""<article class="card" id="entry-{n}" data-n="{n}">
-<div class="card-top"><span class="entry-no">#{n:06d}</span><button class="bm" type="button" data-n="{n}" aria-pressed="false" aria-label="Bookmark {title}" title="Bookmark">☆</button></div>
+<div class="card-top"><span class="entry-no">#{n:06d}</span><button class="bm" type="button" data-n="{n}" aria-pressed="false" aria-label="Bookmark {title}" title="Bookmark">{BOOKMARK_ICON}</button></div>
 <h2><a lang="ja" href="{url(f"work/?n={n}")}">{title}</a></h2>
 {subtitle}
 {author_line}
@@ -491,7 +498,7 @@ def section_page(section: str, entries: list[dict], index_hash: str, search_hash
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
         <input id="search" type="search" placeholder="Title, author, summary, setting, themes…" autocomplete="off" spellcheck="false">
       </label>
-      <button id="bookmarks" class="bm-btn" type="button" aria-pressed="false">★ Bookmarks</button>
+      <button id="bookmarks" class="bm-btn" type="button" aria-pressed="false">{BOOKMARK_ICON} Bookmarks</button>
     </div>
     <form id="filters">
       <details class="filters">

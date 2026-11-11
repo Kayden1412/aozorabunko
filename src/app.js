@@ -8,6 +8,16 @@
   const indexUrl = body.dataset.index || "";
   const searchUrl = body.dataset.search || "";
   const PAGE = 24;
+  const BOOKMARK_ICON =
+    '<svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false">' +
+    "<!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->" +
+    '<path d="M0 64C0 28.7 28.7 0 64 0L320 0c35.3 0 64 28.7 64 64l0 417.1c0 25.6-28.5 40.8-49.8 26.6L192 412.8 49.8 507.7C28.5 521.9 0 506.6 0 481.1L0 64zM64 48c-8.8 0-16 7.2-16 16l0 387.2 117.4-78.2c16.1-10.7 37.1-10.7 53.2 0L336 451.2 336 64c0-8.8-7.2-16-16-16L64 48z"/>' +
+    "</svg>";
+  const BOOKMARK_ICON_ON =
+    '<svg class="icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false">' +
+    "<!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->" +
+    '<path d="M64 0C28.7 0 0 28.7 0 64L0 480c0 11.5 6.2 22.2 16.2 27.8s22.3 5.5 32.2-.4L192 421.3 335.5 507.4c9.9 5.9 22.2 6.1 32.2 .4S384 491.5 384 480l0-416c0-35.3-28.7-64-64-64L64 0z"/>' +
+    "</svg>";
 
   const metaEl = document.getElementById("site-meta");
   const META = metaEl ? JSON.parse(metaEl.textContent) : {};
@@ -166,7 +176,7 @@
     bm.setAttribute("aria-pressed", String(isSet));
     bm.setAttribute("aria-label", (isSet ? "Remove bookmark for " : "Bookmark ") + row[1]);
     bm.title = isSet ? "Remove bookmark" : "Bookmark";
-    bm.textContent = isSet ? "★" : "☆";
+    bm.innerHTML = isSet ? BOOKMARK_ICON_ON : BOOKMARK_ICON;
     top.appendChild(bm);
     article.appendChild(top);
 
@@ -497,7 +507,10 @@
     if (s.sort !== "number") n++;
     if (s.bm) n++;
     activeCountEl.textContent = n ? "· " + n + " active" : "";
-    bookmarksEl.textContent = "★ Bookmarks" + (bookmarks.size ? " (" + bookmarks.size + ")" : "");
+    bookmarksEl.innerHTML =
+      (bookmarksEl.getAttribute("aria-pressed") === "true" ? BOOKMARK_ICON_ON : BOOKMARK_ICON) +
+      " Bookmarks" +
+      (bookmarks.size ? " (" + bookmarks.size + ")" : "");
   }
 
   function updateBookmarkButtons() {
@@ -505,7 +518,7 @@
       const n = Number(b.dataset.n);
       const set = bookmarks.has(n);
       b.setAttribute("aria-pressed", String(set));
-      b.textContent = set ? "★" : "☆";
+      b.innerHTML = set ? BOOKMARK_ICON_ON : BOOKMARK_ICON;
       b.title = set ? "Remove bookmark" : "Bookmark";
       const title = b.closest(".card")?.querySelector("h2")?.textContent || "";
       b.setAttribute("aria-label", (set ? "Remove bookmark for " : "Bookmark ") + title);

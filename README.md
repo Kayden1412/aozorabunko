@@ -67,3 +67,13 @@ Routes: `/` (fiction), `/nonfiction/`, `/poetry/`, `/translations/`, and
 
 CBOR shards are gzip-compressed and decoded with `DecompressionStream`
 (current Chrome, Edge, Firefox and Safari).
+
+## Credits
+
+The bookmark icon is from [Font Awesome Free 7.3.1](https://fontawesome.com) by
+[@fontawesome](https://github.com/FontAwesome), used under the
+[Font Awesome Free License](https://fontawesome.com/license/free): icons are
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), fonts are
+[SIL OFL 1.1](https://scripts.sil.org/OFL), and code is
+[MIT](https://opensource.org/licenses/MIT). The original copyright notice is
+kept in the inline SVG.
