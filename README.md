@@ -46,18 +46,24 @@ BASE_PATH=/repo/ python3 build.py
 2. In **Settings → Pages**, choose **GitHub Actions** as the source.
 3. Push to `main`; the workflow builds `dist/` and publishes it.
 
-## URLs
+## Improvements over the original
 
-* `/` — fiction, plus `/nonfiction/`, `/poetry/`, `/translations/`
-* `/work/?n=2` — one work
-* Filters are stored in the query string, e.g. `/?q=cat&genre=fantasy&sort=year-desc`
-* Form, genre and tag filters are multi-select; repeat the parameter, e.g.
-  `/?form=novel&form=short_story&genre=fantasy`
-* Click a filter once to include it and twice to exclude it. Exclusions use a `not_`
-  prefix, e.g. `/?form=novel&not_form=short_story`
-* Every sort field supports both directions, e.g. `?sort=year-asc`,
-  `?sort=length-desc`, or `?sort=kanji-asc`
-* Bookmarks use `localStorage` and are shared between the list and work pages.
+* **Multi-select filters.** Form, genre, sexual content and tag filters take any
+  number of values — OR within a group, AND across groups.
+* **Exclude filters.** Click a filter once to include it and twice to exclude it.
+  Exclusions are stored with a `not_` prefix, e.g. `?not_form=short_story`.
+* **Sort every field both ways.** Entry number, author, distinctiveness, length,
+  unique kanji and year all sort ascending or descending, e.g. `?sort=length-desc`
+  or `?sort=year-asc`.
+* **Instant search and filtering.** Everything runs in memory after the small index
+  loads — no page reloads or server round trips. Results appear immediately while
+  the longer analysis text continues loading.
+* **Shareable state.** Search, filters and sorting live in the query string, e.g.
+  `/?q=cat&form=novel&form=short_story&not_genre=fantasy&sort=year-desc`.
+* **Bookmarks.** Stored in `localStorage` and shared between the list and work viewer.
+
+Routes: `/` (fiction), `/nonfiction/`, `/poetry/`, `/translations/`, and
+`/work/?n=2` for a single work.
 
 CBOR shards are gzip-compressed and decoded with `DecompressionStream`
 (current Chrome, Edge, Firefox and Safari).
