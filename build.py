@@ -322,7 +322,7 @@ def write_data(section: str, entries: list[dict], index: dict) -> tuple[str, str
     index_hash = hashlib.sha1(index_bytes).hexdigest()[:10]
 
     search_rows = [
-        [e["n"], e["summary"], e["setting"], e["distinctiveness"], e["sexual_notes"], e["themes"]]
+        [e["n"], e["summary"], e["setting"], e["distinctiveness"], e["sexual_notes"]]
         for e in entries
     ]
     search_raw = bytearray()
@@ -366,7 +366,7 @@ def nav_html(current: str) -> str:
 def header_html(current: str) -> str:
     return f"""<header class="site-header">
   <div class="wrap header-inner">
-    <div class="brand"><h1><a href="{url("")}">青空文庫</a></h1><span class="tagline">Aozora reading guide</span></div>
+    <div class="brand"><h1><a href="{url("")}" lang="ja">青空文庫</a></h1><span class="tagline">Aozora reading guide</span></div>
     {nav_html(current)}
   </div>
 </header>"""
@@ -375,7 +375,7 @@ def header_html(current: str) -> str:
 def footer_html() -> str:
     return """<footer class="site-footer">
   <div class="wrap">
-    <p class="jp">青空文庫 · Aozora Bunko</p>
+    <p class="jp"><span lang="ja">青空文庫</span> · Aozora Bunko</p>
     <p>An independent, faster reading guide to works in the Aozora Bunko public-domain collection.
     Texts and bibliographic records are hosted by <a href="https://www.aozora.gr.jp/" target="_blank" rel="noopener">aozora.gr.jp</a>.</p>
   </div>
@@ -389,6 +389,8 @@ def head_html(title: str, description: str) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eaf2fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#050d15" media="(prefers-color-scheme: dark)">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(description)}">
 <meta property="og:type" content="website">
@@ -402,7 +404,9 @@ def head_html(title: str, description: str) -> str:
 def author_html(e: dict) -> str:
     ja = esc(e["author_ja"])
     if e["author_ja_url"]:
-        ja = f'<a href="{esc(e["author_ja_url"])}" target="_blank" rel="noopener">{ja}</a>'
+        ja = f'<a lang="ja" href="{esc(e["author_ja_url"])}" target="_blank" rel="noopener">{ja}</a>'
+    else:
+        ja = f'<span lang="ja">{ja}</span>'
     out = ja
     if e["author_en"]:
         en = esc(e["author_en"])
@@ -416,7 +420,7 @@ def card_html(e: dict) -> str:
     n = e["n"]
     author = author_html(e)
     author_line = f'<p class="author">{author}</p>' if e["author_ja"] else ""
-    subtitle = f'<p class="subtitle">{esc(e["subtitle"])}</p>' if e["subtitle"] else ""
+    subtitle = f'<p class="subtitle" lang="ja">{esc(e["subtitle"])}</p>' if e["subtitle"] else ""
     chips = ""
     if e["genres"]:
         chips = '<ul class="chips">' + "".join(
@@ -431,7 +435,7 @@ def card_html(e: dict) -> str:
     title = esc(e["title"])
     return f"""<article class="card" id="entry-{n}" data-n="{n}">
 <div class="card-top"><span class="entry-no">#{n:06d}</span><button class="bm" type="button" data-n="{n}" aria-pressed="false" aria-label="Bookmark {title}" title="Bookmark">☆</button></div>
-<h2><a href="{url(f"work/?n={n}")}">{title}</a></h2>
+<h2><a lang="ja" href="{url(f"work/?n={n}")}">{title}</a></h2>
 {subtitle}
 {author_line}
 {chips}
@@ -516,7 +520,7 @@ def section_page(section: str, entries: list[dict], index_hash: str, search_hash
   <div class="grid" id="list">
 {cards}
   </div>
-  <p class="empty" id="empty" hidden>No entries match.</p>
+  <p class="empty" id="empty" hidden>No entries match. <a id="empty-reset" href="{section_url(section)}">Reset filters</a></p>
   <div id="sentinel" class="sentinel" aria-hidden="true"></div>
   <noscript><p class="noscript">The first {min(PAGE_SIZE, len(entries))} works are listed above. Enable JavaScript for search, filters, bookmarks and the complete list.</p></noscript>
 </main>

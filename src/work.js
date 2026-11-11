@@ -5,6 +5,8 @@
   const root = document.getElementById("work");
   const body = document.body;
   const base = body.dataset.base || "/";
+  const worksBase = body.dataset.works || "/data/works/";
+  const worksVersion = body.dataset.v || "";
   const META = JSON.parse(document.getElementById("site-meta").textContent).labels;
   const params = new URLSearchParams(location.search);
   const n = Number(params.get("n"));
@@ -14,6 +16,47 @@
     if (className) node.className = className;
     if (text != null) node.textContent = text;
     return node;
+  }
+
+  function pagerLink(direction, row) {
+    const a = el("a", direction, direction === "prev" ? "← " + row[2] : row[2] + " →");
+    a.href = base + "work/?n=" + row[0];
+    return a;
+  }
+
+  function paintPager(pager, prev, next) {
+    pager.textContent = "";
+    if (prev) pager.appendChild(pagerLink("prev", prev));
+    if (next) pager.appendChild(pagerLink("next", next));
+  }
+
+  function adjacentWork(shardNumber, section, direction) {
+    if (shardNumber < 0) return Promise.resolve(null);
+    const url = worksBase + shardNumber + ".cbor.gz?v=" + worksVersion;
+    return fetchCborShard(url)
+      .then((rows) => {
+        const matches = rows.filter((r) => r[1] === section).sort((a, b) => a[0] - b[0]);
+        if (!matches.length) return null;
+        return direction === "prev" ? matches[matches.length - 1] : matches[0];
+      })
+      .catch(() => null);
+  }
+
+  function fillPager(pager, row, near) {
+    const shardNumber = Math.floor(row[0] / 100);
+    const jobs = [];
+    if (!near.prev && shardNumber > 0) jobs.push({ key: "prev", shard: shardNumber - 1 });
+    if (!near.next) jobs.push({ key: "next", shard: shardNumber + 1 });
+    if (!jobs.length) return;
+
+    Promise.all(jobs.map((job) => adjacentWork(job.shard, row[1], job.key))).then((found) => {
+      jobs.forEach((job, index) => {
+        if (found[index]) near[job.key] = found[index];
+      });
+      paintPager(pager, near.prev, near.next);
+      if (!near.prev && !near.next) pager.remove();
+      else pager.hidden = false;
+    });
   }
 
   function yearText(year, source) {
@@ -34,12 +77,15 @@
     const frag = document.createDocumentFragment();
     if (jaUrl) {
       const a = el("a", null, ja);
+      a.lang = "ja";
       a.href = jaUrl;
       a.target = "_blank";
       a.rel = "noopener";
       frag.appendChild(a);
     } else {
-      frag.appendChild(document.createTextNode(ja));
+      const span = el("span", null, ja);
+      span.lang = "ja";
+      frag.appendChild(span);
     }
     if (en) {
       frag.appendChild(document.createTextNode(" "));
@@ -108,8 +154,14 @@
     crumbs.appendChild(el("span", null, "#" + String(num).padStart(6, "0")));
     article.appendChild(crumbs);
 
-    article.appendChild(el("h1", null, title));
-    if (subtitle) article.appendChild(el("p", "subtitle", subtitle));
+    const heading = el("h1", null, title);
+    heading.lang = "ja";
+    article.appendChild(heading);
+    if (subtitle) {
+      const sub = el("p", "subtitle", subtitle);
+      sub.lang = "ja";
+      article.appendChild(sub);
+    }
 
     const byline = el("p", "byline");
     byline.appendChild(authorNode(row));
@@ -202,25 +254,18 @@
       article.appendChild(sources);
     }
 
-    const siblings = rows.filter((r) => r[1] === section);
+    const siblings = rows.filter((r) => r[1] === section).sort((a, b) => a[0] - b[0]);
     const index = siblings.findIndex((r) => r[0] === num);
-    const prev = index > 0 ? siblings[index - 1] : null;
-    const next = index >= 0 && index + 1 < siblings.length ? siblings[index + 1] : null;
-    if (prev || next) {
-      const pager = el("nav", "pager");
-      pager.setAttribute("aria-label", "Previous and next work");
-      if (prev) {
-        const a = el("a", "prev", "← " + prev[2]);
-        a.href = base + "work/?n=" + prev[0];
-        pager.appendChild(a);
-      }
-      if (next) {
-        const a = el("a", "next", next[2] + " →");
-        a.href = base + "work/?n=" + next[0];
-        pager.appendChild(a);
-      }
-      article.appendChild(pager);
-    }
+    const near = {
+      prev: index > 0 ? siblings[index - 1] : null,
+      next: index >= 0 && index + 1 < siblings.length ? siblings[index + 1] : null,
+    };
+
+    const pager = el("nav", "pager");
+    pager.setAttribute("aria-label", "Previous and next work");
+    paintPager(pager, near.prev, near.next);
+    pager.hidden = !near.prev && !near.next;
+    article.appendChild(pager);
 
     const back = el("a", "back-link", "← All " + sectionLabel.toLowerCase());
     back.href = sectionHref;
@@ -229,6 +274,8 @@
     root.textContent = "";
     root.appendChild(article);
     root.removeAttribute("aria-busy");
+
+    fillPager(pager, row, near);
 
     document.title = title + " · " + sectionLabel + " · Aozora";
     const desc = document.querySelector('meta[name="description"]');

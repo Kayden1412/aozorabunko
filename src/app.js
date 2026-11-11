@@ -30,9 +30,14 @@
   function paintButton(btn, state) {
     btn.dataset.state = state;
     btn.setAttribute("aria-pressed", state === "in" ? "true" : state === "out" ? "mixed" : "false");
+    const label = btn.dataset.label || (btn.dataset.label = btn.textContent);
+    let suffix = "";
+    if (state === "in") suffix = " (included)";
+    else if (state === "out") suffix = " (excluded)";
+    btn.setAttribute("aria-label", label + suffix);
     if (state === "in") btn.title = "Included — click to exclude";
     else if (state === "out") btn.title = "Excluded — click to clear";
-    else btn.title = "Include " + btn.textContent + " — click again to exclude";
+    else btn.title = "Include " + label + " — click again to exclude";
   }
 
   function cycleButton(btn) {
@@ -147,7 +152,7 @@
   }
 
   function card(row) {
-    const [ja, en] = authorOf(row);
+    const [ja, en, jaUrl, enUrl] = authorOf(row);
     const article = el("article", "card");
     article.dataset.n = String(row[0]);
     article.id = "entry-" + row[0];
@@ -167,18 +172,45 @@
 
     const h2 = el("h2");
     const link = el("a", null, row[1]);
+    link.lang = "ja";
     link.href = base + "work/?n=" + row[0];
     h2.appendChild(link);
     article.appendChild(h2);
 
-    if (row[2]) article.appendChild(el("p", "subtitle", row[2]));
+    if (row[2]) {
+      const subtitle = el("p", "subtitle", row[2]);
+      subtitle.lang = "ja";
+      article.appendChild(subtitle);
+    }
 
     if (ja) {
       const p = el("p", "author");
-      p.appendChild(document.createTextNode(ja));
+      if (jaUrl) {
+        const a = el("a", null, ja);
+        a.lang = "ja";
+        a.href = jaUrl;
+        a.target = "_blank";
+        a.rel = "noopener";
+        p.appendChild(a);
+      } else {
+        const span = el("span", null, ja);
+        span.lang = "ja";
+        p.appendChild(span);
+      }
       if (en) {
         p.appendChild(document.createTextNode(" "));
-        p.appendChild(el("span", "en", "(" + en + ")"));
+        const span = el("span", "en", "(");
+        if (enUrl) {
+          const a = el("a", null, en);
+          a.href = enUrl;
+          a.target = "_blank";
+          a.rel = "noopener";
+          span.appendChild(a);
+        } else {
+          span.appendChild(document.createTextNode(en));
+        }
+        span.appendChild(document.createTextNode(")"));
+        p.appendChild(span);
       }
       article.appendChild(p);
     }
@@ -498,7 +530,7 @@
       .then((data) => {
         full = {};
         for (const row of data) {
-          full[row[0]] = [row[1], row[2], row[3], row[4], row[5]];
+          full[row[0]] = [row[1], row[2], row[3], row[4]];
         }
         fullLoaded = true;
         searchBlobs.clear();
@@ -514,14 +546,28 @@
   }
 
   let debounceTimer = 0;
+  let fullTimer = 0;
   function debouncedRefresh() {
     clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(() => refresh(), 140);
   }
 
+  function resetFilters() {
+    searchEl.value = "";
+    filterButtons.forEach((btn) => paintButton(btn, "off"));
+    scoreEl.value = "0";
+    sortEl.value = "number";
+    bookmarksEl.setAttribute("aria-pressed", "false");
+    refresh();
+  }
+
   function wire() {
     searchEl.addEventListener("input", () => {
-      if (searchEl.value.trim()) loadFull();
+      const query = searchEl.value.trim();
+      clearTimeout(fullTimer);
+      if (query) {
+        fullTimer = window.setTimeout(loadFull, query.length >= 2 ? 450 : 900);
+      }
       debouncedRefresh();
     });
     filterButtons.forEach((btn) =>
@@ -540,12 +586,12 @@
     });
     filtersEl.addEventListener("reset", (event) => {
       event.preventDefault();
-      searchEl.value = "";
-      filterButtons.forEach((btn) => paintButton(btn, "off"));
-      scoreEl.value = "0";
-      sortEl.value = "number";
-      bookmarksEl.setAttribute("aria-pressed", "false");
-      refresh();
+      resetFilters();
+    });
+    emptyEl.addEventListener("click", (event) => {
+      if (!event.target.closest("#empty-reset")) return;
+      event.preventDefault();
+      resetFilters();
     });
     list.addEventListener("click", (event) => {
       const bm = event.target.closest(".bm");
@@ -601,26 +647,40 @@
   }
 
   function fail(message) {
-    statusEl.textContent = message;
+    statusEl.textContent = "";
+    statusEl.appendChild(document.createTextNode(message + " "));
+    const retry = el("button", "retry", "Retry");
+    retry.type = "button";
+    retry.addEventListener("click", () => {
+      retry.disabled = true;
+      loadIndex();
+    });
+    statusEl.appendChild(retry);
+    statusEl.appendChild(document.createTextNode("."));
     updateBookmarkButtons();
+  }
+
+  function loadIndex() {
+    statusEl.textContent = "Loading the filter index…";
+    fetch(indexUrl)
+      .then((r) => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then((data) => {
+        authors = data.a || [];
+        forms = data.f || [];
+        genres = data.g || [];
+        sexualLevels = data.x || [];
+        tags = data.t || [];
+        rows = data.rows || [];
+        if (statusEl.textContent === "Loading the filter index…") statusEl.textContent = "";
+        init();
+      })
+      .catch(() => fail("Could not load the filter index. Browsing still works."));
   }
 
   if (!list) return;
   wire();
-
-  fetch(indexUrl)
-    .then((r) => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then((data) => {
-      authors = data.a || [];
-      forms = data.f || [];
-      genres = data.g || [];
-      sexualLevels = data.x || [];
-      tags = data.t || [];
-      rows = data.rows || [];
-      init();
-    })
-    .catch(() => fail("Could not load the filter index. Browsing still works; reload to retry."));
+  loadIndex();
 })();
